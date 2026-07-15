@@ -125,38 +125,27 @@ function MemoryScreen:buildLayout()
         and math.max(sw - bw_size - Size.span.horizontal_default * 2, 100)
         or  math.floor(sw * 0.92)
 
-    local top_buttons = ButtonTable:new{
-        width                 = buttons_w,
-        shrink_unneeded_width = true,
-        buttons = {{
-            { text = _("Nouveau"),
-              callback = function() self:onNewGame() end },
-            { text = self:_getGridButtonText(),
-              callback = function() self:openGridMenu() end,
-              id = "grid_btn" },
-            { text = self:_getPlayersButtonText(),
-              callback = function() self:openPlayersMenu() end,
-              id = "players_btn" },
+    local title_bar = self:buildTitleBar(_("Mémoire"), function()
+        return {
+            { text = _("Nouveau"),                  callback = function() self:onNewGame() end },
+            { text = self:_getGridButtonText(),     callback = function() self:openGridMenu() end },
+            { text = self:_getPlayersButtonText(),  callback = function() self:openPlayersMenu() end },
             self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
-            self:makeCloseButtonConfig(),
-        }},
-    }
-
-    self.top_buttons = top_buttons
+        }
+    end)
 
     if is_landscape then
         local right_panel = VerticalGroup:new{
             align = "center",
-            top_buttons,
-            VerticalSpan:new{ width = Size.span.vertical_large },
             self.status_text,
         }
-        self.layout = HorizontalGroup:new{
+        local content = HorizontalGroup:new{
             align = "center",
             board_frame,
             HorizontalSpan:new{ width = Size.span.horizontal_default },
             right_panel,
         }
+        self:buildLandscapeLayout(title_bar, content)
     else
         local content = VerticalGroup:new{
             align = "center",
@@ -164,10 +153,9 @@ function MemoryScreen:buildLayout()
             VerticalSpan:new{ width = Size.span.vertical_large },
             self.status_text,
         }
-        self:buildPortraitLayout(top_buttons, content, nil)
+        self:buildPortraitLayout(title_bar, content, nil)
     end
 
-    self[1] = self.layout
     self:updateStatus()
 end
 
