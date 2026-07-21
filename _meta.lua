@@ -3,5 +3,5 @@ return {
     name        = "memory",
     fullname    = _("Mémoire"),
     description = _("Jeu de mémoire — trouvez les paires de cartes."),
-    version     = "1.1.3",
+    version     = "1.1.4",
 }
