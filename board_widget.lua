@@ -147,9 +147,8 @@ function MemoryBoardWidget:paintTo(bb, x, y)
 
                 local label = tostring(card.value)
                 local m     = RenderText:sizeUtf8Text(0, iw, face, label, true, false)
-                local fh    = m.y_bottom - m.y_top
                 local tx    = ix + math.floor((iw - m.x) / 2)
-                local ty    = iy + math.floor((ih - fh) / 2) + math.abs(m.y_top)
+                local ty    = iy + math.floor((ih + m.y_top - m.y_bottom) / 2)
                 RenderText:renderUtf8Text(bb, tx, ty, face, label, true, false, tc)
             end
 
