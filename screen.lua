@@ -125,6 +125,15 @@ function MemoryScreen:buildLayout()
         and math.max(sw - bw_size - Size.span.horizontal_default * 2, 100)
         or  math.floor(sw * 0.92)
 
+    -- The status line can get long ("Paires trouvées: 1 / 8  Coups: 12").
+    -- In portrait it sits directly alongside board_frame in the same
+    -- VerticalGroup, which centers each child against the widest one --
+    -- unbounded, a long status string overflows past the screen edge
+    -- instead of wrapping, getting cut off rather than centered. Bind it
+    -- to the board's own width there; in landscape it's alone in the
+    -- right-hand panel, so buttons_w is the correct reference.
+    self.status_text:setMaxWidth(is_landscape and buttons_w or bw_size)
+
     local title_bar = self:buildTitleBar(_("Mémoire"), function()
         return {
             { text = _("Nouveau"),                  callback = function() self:onNewGame() end },
