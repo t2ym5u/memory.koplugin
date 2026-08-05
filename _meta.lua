@@ -1,6 +1,6 @@
 local _ = require("gettext")
 return {
-    fullname    = _("Mémoire"),
-    description = _("Jeu de mémoire — trouvez les paires de cartes."),
+    fullname    = _("Memory"),
+    description = _("Memory game — find matching card pairs."),
     version     = "1.1.12",
 }
