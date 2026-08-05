@@ -12,6 +12,7 @@ end
 local PluginBase = require("plugin_base")
 local _          = require("i18n")
 
+require("i18n").extend(lrequire("i18n_fr"))
 local MemoryScreen = lrequire("screen")
 
 -- ---------------------------------------------------------------------------
@@ -20,7 +21,7 @@ local MemoryScreen = lrequire("screen")
 
 local MemoryPlugin = PluginBase:extend{
     name      = "memory",
-    menu_text = _("Mémoire"),
+    menu_text = _("Memory"),
     menu_hint = "tools",
 }
 
