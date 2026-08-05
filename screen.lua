@@ -134,9 +134,9 @@ function MemoryScreen:buildLayout()
     -- right-hand panel, so buttons_w is the correct reference.
     self.status_text:setMaxWidth(is_landscape and buttons_w or bw_size)
 
-    local title_bar = self:buildTitleBar(_("Mémoire"), function()
+    local title_bar = self:buildTitleBar(_("Memory"), function()
         return {
-            { text = _("Nouveau"),                  callback = function() self:onNewGame() end },
+            { text = _("New"),                  callback = function() self:onNewGame() end },
             { text = self:_getGridButtonText(),     callback = function() self:openGridMenu() end },
             { text = self:_getPlayersButtonText(),  callback = function() self:openPlayersMenu() end },
             self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
@@ -235,14 +235,14 @@ function MemoryScreen:onGameWon()
     if players == 2 then
         local s1, s2 = board.scores[1], board.scores[2]
         if s1 > s2 then
-            msg = string.format(_("Joueur 1 gagne ! %d − %d  (%d coups)"), s1, s2, turns)
+            msg = string.format(_("Player 1 wins! %d − %d  (%d moves)"), s1, s2, turns)
         elseif s2 > s1 then
-            msg = string.format(_("Joueur 2 gagne ! %d − %d  (%d coups)"), s2, s1, turns)
+            msg = string.format(_("Player 2 wins! %d − %d  (%d moves)"), s2, s1, turns)
         else
-            msg = string.format(_("Egalité ! %d − %d  (%d coups)"), s1, s2, turns)
+            msg = string.format(_("Tie! %d − %d  (%d moves)"), s1, s2, turns)
         end
     else
-        msg = string.format(_("Bravo ! Toutes les paires trouvées en %d coups."), turns)
+        msg = string.format(_("Well done! All pairs found in %d moves."), turns)
     end
     self:showMessage(msg, 5)
     self:updateStatus()
@@ -263,24 +263,24 @@ function MemoryScreen:updateStatus(msg)
             if players == 2 then
                 local s1, s2 = board.scores[1], board.scores[2]
                 if s1 > s2 then
-                    status = string.format(_("Joueur 1 gagne ! %d − %d"), s1, s2)
+                    status = string.format(_("Player 1 wins! %d − %d"), s1, s2)
                 elseif s2 > s1 then
-                    status = string.format(_("Joueur 2 gagne ! %d − %d"), s2, s1)
+                    status = string.format(_("Player 2 wins! %d − %d"), s2, s1)
                 else
-                    status = string.format(_("Egalité ! %d − %d"), s1, s2)
+                    status = string.format(_("Tie! %d − %d"), s1, s2)
                 end
             else
-                status = string.format(_("Bravo ! %d coups"), board.turns)
+                status = string.format(_("Well done! %d moves"), board.turns)
             end
         else
             local matched = board:matchedCount()
             local total   = board.n_pairs
             if players == 2 then
                 local cp = board.current_player
-                status = string.format(_("Joueur %d  Paires: %d/%d  J1: %d  J2: %d"),
+                status = string.format(_("Player %d  Pairs: %d/%d  P1: %d  P2: %d"),
                     cp, matched, total, board.scores[1], board.scores[2])
             else
-                status = string.format(_("Paires trouvées: %d / %d  Coups: %d"),
+                status = string.format(_("Pairs found: %d / %d  Moves: %d"),
                     matched, total, board.turns)
             end
         end
@@ -299,7 +299,7 @@ end
 
 function MemoryScreen:_getPlayersButtonText()
     local p = self.plugin:getSetting("players", 1)
-    return p == 1 and _("1 joueur") or _("2 joueurs")
+    return p == 1 and _("1 player") or _("2 players")
 end
 
 -- ---------------------------------------------------------------------------
@@ -308,11 +308,11 @@ end
 
 function MemoryScreen:openGridMenu()
     MenuHelper.openPickerMenu{
-        title      = _("Taille de la grille"),
+        title      = _("Grid size"),
         items      = {
-            { id = "small",  text = _("Petite (4×4 — 8 paires)")  },
-            { id = "medium", text = _("Moyenne (4×5 — 10 paires)") },
-            { id = "large",  text = _("Grande (4×6 — 12 paires)")  },
+            { id = "small",  text = _("Small (4×4 — 8 pairs)")  },
+            { id = "medium", text = _("Medium (4×5 — 10 pairs)") },
+            { id = "large",  text = _("Large (4×6 — 12 pairs)")  },
         },
         current_id = self.plugin:getSetting("grid_size", "small"),
         on_select  = function(id)
@@ -327,10 +327,10 @@ end
 
 function MemoryScreen:openPlayersMenu()
     MenuHelper.openPickerMenu{
-        title      = _("Nombre de joueurs"),
+        title      = _("Number of players"),
         items      = {
-            { id = 1, text = _("1 joueur") },
-            { id = 2, text = _("2 joueurs") },
+            { id = 1, text = _("1 player") },
+            { id = 2, text = _("2 players") },
         },
         current_id = self.plugin:getSetting("players", 1),
         on_select  = function(id)
