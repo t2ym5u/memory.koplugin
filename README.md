@@ -4,7 +4,7 @@ A Memory (Concentration) card game plugin for [KOReader](https://github.com/kore
 
 ## Screenshot
 
-*(Screenshot to be added.)*
+![Screenshot](images/memory.png)
 
 ## Rules
 
