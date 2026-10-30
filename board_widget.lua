@@ -30,6 +30,8 @@ local MemoryBoardWidget = InputContainer:extend{
     board        = nil,
     onCellAction = nil,
     size_ratio   = 0.78,
+    max_width    = nil,   -- pixels; when both are set they override size_ratio
+    max_height   = nil,
 }
 
 function MemoryBoardWidget:init()
@@ -41,9 +43,15 @@ function MemoryBoardWidget:init()
 
     local sw      = Screen:getWidth()
     local sh      = Screen:getHeight()
-    local base    = math.floor(math.min(sw, sh) * self.size_ratio)
+    local max_w, max_h
+    if self.max_width and self.max_height then
+        max_w, max_h = self.max_width, self.max_height
+    else
+        max_w = math.floor(math.min(sw, sh) * self.size_ratio)
+        max_h = max_w
+    end
     -- Keep cells square: use smallest dimension that fits both rows and cols
-    local cell    = math.min(math.floor(base / ncols), math.floor(base / nrows))
+    local cell    = math.min(math.floor(max_w / ncols), math.floor(max_h / nrows))
     self.cell_w   = cell
     self.cell_h   = cell
 
@@ -55,16 +63,23 @@ function MemoryBoardWidget:init()
     self.dimen      = Geom:new{ w = bw, h = bh }
     self.paint_rect = Geom:new{ x = 0, y = 0, w = bw, h = bh }
 
-    -- Fit a font for card labels (values up to 12 digits)
-    local max_w    = math.floor(cell * 0.65)
-    local max_h    = math.floor(cell * 0.65)
-    local fsize    = math.max(10, math.floor(cell * 0.55))
-    while fsize > 10 do
-        local face = Font:getFace("cfont", fsize)
-        local m    = RenderText:sizeUtf8Text(0, max_w, face, "12", true, false)
-        local fh   = m.y_bottom - m.y_top
-        if m.x <= max_w and fh <= max_h then break end
-        fsize = fsize - 1
+    -- Fit a font for card labels (values up to 12, so two digits). Measured
+    -- unbounded: with max_w as the limit sizeUtf8Text truncates the text, so
+    -- the width test could never fail. Ink height is y_top + y_bottom (both
+    -- distances from the baseline); their difference is negative and let
+    -- every size through, so the start size -- cell-derived, then scaled
+    -- again by DPI in Font:getFace() -- was always kept.
+    local fit_w    = math.floor(cell * 0.65)
+    local fit_h    = math.floor(cell * 0.5)
+    local lo, hi, fsize = 10, math.max(10, cell), 10
+    while lo <= hi do
+        local mid = math.floor((lo + hi) / 2)
+        local m   = RenderText:sizeUtf8Text(0, sw, Font:getFace("cfont", mid), "88", true, false)
+        if m.x <= fit_w and (m.y_top + m.y_bottom) <= fit_h then
+            fsize, lo = mid, mid + 1
+        else
+            hi = mid - 1
+        end
     end
     self.card_face = Font:getFace("cfont", fsize)
 
@@ -72,7 +87,7 @@ function MemoryBoardWidget:init()
         Tap = {
             GestureRange:new{
                 ges   = "tap",
-                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+                range = function() return self.paint_rect end,
             },
         },
     }

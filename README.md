@@ -29,8 +29,8 @@ Find all matching pairs by flipping two cards at a time. Matching cards stay fac
 | Action | How |
 |--------|-----|
 | Flip a card | Tap it |
-| New game | Tap **New** |
-| Change grid size | Tap **Grid** |
+| New game | Tap **New game** |
+| Change grid size | Tap **Size** |
 | Show rules | Tap **Rules** |
 
 ## License

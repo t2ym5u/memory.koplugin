@@ -6,6 +6,28 @@ Reconstructed from this repository's git history: each release lists the
 feature and fix commits it carried. Version bumps, screenshot additions
 and CI syncs are left out.
 
+## [1.2.0] - 2026-10-30
+
+### Added
+- "New game" appears under the status line once every pair is found, so the
+  next round no longer needs the menu.
+
+### Changed
+- Redesigned play screen, in line with the other games: a larger board that
+  uses the full width and height available instead of a square, and a
+  status line that reads "size · Pairs: n/m · Moves: n" (or "· Player n ·
+  Score: a–b" in two-player mode) and wraps in landscape instead of being
+  cut off.
+- Title-bar menu in the same order as every other game, with the current
+  values shown: New game (was "New"), "Size: …" and "Players: 1" (was a
+  bare grid name and "1 player").
+- New README screenshot.
+
+### Fixed
+- The numbers on the cards were too big and overflowed them on high-DPI
+  screens: the font-fit loop never rejected a size. They are now fitted to
+  the card.
+
 ## [1.1.15] - 2026-10-01
 
 ### Fixed

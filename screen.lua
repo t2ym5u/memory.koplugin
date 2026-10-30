@@ -11,7 +11,6 @@ local function lrequire(name)
     return package.loaded[key]
 end
 
-local ButtonTable     = require("ui/widget/buttontable")
 local Device          = require("device")
 local FrameContainer  = require("ui/widget/container/framecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
@@ -21,6 +20,7 @@ local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
 local _               = require("i18n")
+local T               = require("ffi/util").template
 
 local MenuHelper          = require("menu_helper")
 local ScreenBase          = require("screen_base")
@@ -103,66 +103,55 @@ end
 -- ---------------------------------------------------------------------------
 
 function MemoryScreen:buildLayout()
-    local board = self.board
-
-    self.board_widget = MemoryBoardWidget:new{
-        board        = board,
-        onCellAction = function(r, c) self:onCellAction(r, c) end,
-    }
-
     local is_landscape = self:isLandscape()
-    local sw = DeviceScreen:getWidth()
-
-    local board_frame = FrameContainer:new{
-        padding = Size.padding.default,
-        margin  = Size.margin.default,
-        self.board_widget,
-    }
-
-    local bw_size    = self.board_widget.board_w
-        + (Size.padding.default + Size.margin.default) * 2
-    local buttons_w  = is_landscape
-        and math.max(sw - bw_size - Size.span.horizontal_default * 2, 100)
-        or  math.floor(sw * 0.92)
-
-    -- The status line can get long ("Paires trouvées: 1 / 8  Coups: 12").
-    -- In portrait it sits directly alongside board_frame in the same
-    -- VerticalGroup, which centers each child against the widest one --
-    -- unbounded, a long status string overflows past the screen edge
-    -- instead of wrapping, getting cut off rather than centered. Bind it
-    -- to the board's own width there; in landscape it's alone in the
-    -- right-hand panel, so buttons_w is the correct reference.
-    self.status_text:setMaxWidth(is_landscape and buttons_w or bw_size)
 
     local title_bar = self:buildTitleBar(_("Memory"), function()
         return {
-            { text = _("New"),                  callback = function() self:onNewGame() end },
+            { text = _("New game"),             callback = function() self:onNewGame() end },
             { text = self:_getGridButtonText(),     callback = function() self:openGridMenu() end },
             { text = self:_getPlayersButtonText(),  callback = function() self:openPlayersMenu() end },
             self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
         }
     end)
 
+    -- Flipping cards is the only move: no action bar while
+    -- playing. Once the round is over, a "New game" bar appears under the status.
+    self.status_text:setMaxWidth(self:getControlsWidth())
+    local bar = self:buildActionBar({})
+    local controls = VerticalGroup:new{ align = "center", self.status_text }
+    if bar.round_over then
+        table.insert(controls, VerticalSpan:new{ width = Size.span.vertical_large })
+        table.insert(controls, bar)
+    end
+
+    -- Every card draws its own black outline, so the outer cards already
+    -- form a thick edge: the frame only pads, a border would double it.
+    local frame_pad = Size.padding.large
+    local budget_w, budget_h = self:getBoardBudget(title_bar, controls)
+    self.board_widget = MemoryBoardWidget:new{
+        board        = self.board,
+        max_width    = budget_w - 2 * frame_pad,
+        max_height   = budget_h - 2 * frame_pad,
+        onCellAction = function(r, c) self:onCellAction(r, c) end,
+    }
+    local board_frame = FrameContainer:new{
+        padding    = frame_pad,
+        margin     = 0,
+        bordersize = 0,
+        self.board_widget,
+    }
+
     if is_landscape then
-        local right_panel = VerticalGroup:new{
-            align = "center",
-            self.status_text,
-        }
         local content = HorizontalGroup:new{
             align = "center",
             board_frame,
-            HorizontalSpan:new{ width = Size.span.horizontal_default },
-            right_panel,
+            HorizontalSpan:new{ width = self:getGutter() },
+            controls,
         }
         self:buildLandscapeLayout(title_bar, content)
     else
-        local content = VerticalGroup:new{
-            align = "center",
-            board_frame,
-            VerticalSpan:new{ width = Size.span.vertical_large },
-            self.status_text,
-        }
-        self:buildPortraitLayout(title_bar, content, nil)
+        self:buildPortraitLayout(title_bar, board_frame,
+            VerticalGroup:new{ align = "center", controls, VerticalSpan:new{ width = self:getGutter() } })
     end
 
     self:updateStatus()
@@ -187,6 +176,7 @@ function MemoryScreen:onCellAction(r, c)
         self.board_widget:refresh()
         self.plugin:saveState(self.board:serialize())
         self:updateStatus()
+        self:refreshActionBar()
         if self.board.status == "won" then
             UIManager:scheduleIn(0.3, function() self:onGameWon() end)
         end
@@ -210,6 +200,19 @@ end
 -- ---------------------------------------------------------------------------
 -- New game
 -- ---------------------------------------------------------------------------
+
+function MemoryScreen:isRoundOver()
+    return self.board.status == "won"
+end
+
+-- The bar only exists once the round is over, so showing or hiding it
+-- reflows the layout instead of swapping the bar in place.
+function MemoryScreen:refreshActionBar()
+    if self.action_bar and self:isRoundOver() ~= self.action_bar.round_over then
+        self:buildLayout()
+        UIManager:setDirty(self, function() return "ui", self.dimen end)
+    end
+end
 
 function MemoryScreen:onNewGame()
     -- Cancel any pending flip-back
@@ -273,15 +276,16 @@ function MemoryScreen:updateStatus(msg)
                 status = string.format(_("Well done! %d moves"), board.turns)
             end
         else
-            local matched = board:matchedCount()
-            local total   = board.n_pairs
+            -- Size as rows×cols, matching the grid menu ("Large (4×6 …)").
+            local size  = T("%1\xC3\x97%2", board.rows, board.cols)
+            local pairs = T(_("Pairs: %1/%2"), board:matchedCount(), board.n_pairs)
             if players == 2 then
-                local cp = board.current_player
-                status = string.format(_("Player %d  Pairs: %d/%d  P1: %d  P2: %d"),
-                    cp, matched, total, board.scores[1], board.scores[2])
+                status = self:joinStatus(size,
+                    T(_("Player %1"), board.current_player),
+                    pairs,
+                    T(_("Score: %1–%2"), board.scores[1], board.scores[2]))
             else
-                status = string.format(_("Pairs found: %d / %d  Moves: %d"),
-                    matched, total, board.turns)
+                status = self:joinStatus(size, pairs, T(_("Moves: %1"), board.turns))
             end
         end
     end
@@ -294,12 +298,12 @@ end
 
 function MemoryScreen:_getGridButtonText()
     local gs = self.plugin:getSetting("grid_size", "small")
-    return GRID_LABELS[gs] or gs
+    return T(_("Size: %1"), GRID_LABELS[gs] or gs)
 end
 
 function MemoryScreen:_getPlayersButtonText()
     local p = self.plugin:getSetting("players", 1)
-    return p == 1 and _("1 player") or _("2 players")
+    return T(_("Players: %1"), p)
 end
 
 -- ---------------------------------------------------------------------------
@@ -308,7 +312,7 @@ end
 
 function MemoryScreen:openGridMenu()
     MenuHelper.openPickerMenu{
-        title      = _("Grid size"),
+        title      = _("Size"),
         items      = {
             { id = "small",  text = _("Small (4×4 — 8 pairs)")  },
             { id = "medium", text = _("Medium (4×5 — 10 pairs)") },
@@ -327,7 +331,7 @@ end
 
 function MemoryScreen:openPlayersMenu()
     MenuHelper.openPickerMenu{
-        title      = _("Number of players"),
+        title      = _("Players"),
         items      = {
             { id = 1, text = _("1 player") },
             { id = 2, text = _("2 players") },
