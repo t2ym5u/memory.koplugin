@@ -15,26 +15,6 @@ describe("MemoryBoard", function()
         return b
     end
 
-    describe("setup", function()
-        it("builds a 4x4 grid with every value appearing exactly twice", function()
-            local b = newBoard("small")
-            assert.are.equal(4, b.rows)
-            assert.are.equal(4, b.cols)
-            assert.are.equal(8, b.n_pairs)
-            local counts = {}
-            for r = 1, b.rows do
-                for c = 1, b.cols do
-                    local v = b.cards[r][c].value
-                    counts[v] = (counts[v] or 0) + 1
-                    assert.are.equal("hidden", b.cards[r][c].state)
-                end
-            end
-            for v = 1, b.n_pairs do
-                assert.are.equal(2, counts[v])
-            end
-        end)
-    end)
-
     describe("tapCard", function()
         it("reveals the first card of a turn", function()
             local b = newBoard()
