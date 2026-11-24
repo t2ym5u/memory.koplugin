@@ -88,6 +88,9 @@ function MemoryScreen:init()
     if not self.board:load(state) then
         self.board:setup()
     end
+    -- Closed while a missed pair was still showing: the flip-back did not run
+    -- (deferred actions die with the screen), so finish it now.
+    if self.board.revealed_2 then self.board:hideRevealed() end
 
     self._flipping = false  -- true while waiting to hide a non-matched pair
 
@@ -178,14 +181,14 @@ function MemoryScreen:onCellAction(r, c)
         self:updateStatus()
         self:refreshActionBar()
         if self.board.status == "won" then
-            UIManager:scheduleIn(0.3, function() self:onGameWon() end)
+            self:schedule(0.3, function() self:onGameWon() end)
         end
 
     elseif result == "no_match" then
         self._flipping = true
         self.board_widget:refresh()
         self:updateStatus()
-        UIManager:scheduleIn(FLIP_BACK_DELAY, function()
+        self:schedule(FLIP_BACK_DELAY, function()
             self.board:hideRevealed()
             self._flipping = false
             self.board_widget:refresh()
@@ -216,6 +219,7 @@ end
 
 function MemoryScreen:onNewGame()
     -- Cancel any pending flip-back
+    self:cancelScheduled()
     self._flipping = false
     local grid_size = self.plugin:getSetting("grid_size", "small")
     local players   = self.plugin:getSetting("players", 1)
